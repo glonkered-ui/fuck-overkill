@@ -99,7 +99,7 @@ if not UI_Worked then
     ScreenGui.ResetOnSpawn = false
     ScreenGui.Parent = playerGui
 
-    -- 1. MADE UI BIGGER (350x450)
+    -- BIGGER UI
     local MainFrame = Instance.new("Frame")
     MainFrame.Size = UDim2.new(0, 350, 0, 450)
     MainFrame.Position = UDim2.new(0.5, -175, 0.5, -225)
@@ -118,7 +118,7 @@ if not UI_Worked then
         end
     end)
 
-    -- 2. REMOVED "- RIGHT SHIFT" FROM TITLE
+    -- CLEAN TITLE
     local Title = Instance.new("TextLabel")
     Title.Size = UDim2.new(1, 0, 0, 35)
     Title.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
@@ -209,6 +209,70 @@ if not UI_Worked then
     Tab1.MouseButton1Click:Connect(function() SwitchTab(Tab1, Page1, Page2, Page3) end)
     Tab2.MouseButton1Click:Connect(function() SwitchTab(Tab2, Page2, Page1, Page3) end)
     Tab3.MouseButton1Click:Connect(function() SwitchTab(Tab3, Page3, Page1, Page2) end)
+
+    -- Safe UI Color Themes
+    local Themes = {
+        ["Default Blue"] = {
+            Main = Color3.fromRGB(30, 30, 30),
+            Primary = Color3.fromRGB(50, 50, 80),
+            Secondary = Color3.fromRGB(70, 70, 100),
+            ActiveTab = Color3.fromRGB(60, 60, 60),
+            InactiveTab = Color3.fromRGB(35, 35, 35)
+        },
+        ["Red"] = {
+            Main = Color3.fromRGB(40, 20, 20),
+            Primary = Color3.fromRGB(80, 30, 30),
+            Secondary = Color3.fromRGB(120, 40, 40),
+            ActiveTab = Color3.fromRGB(120, 40, 40),
+            InactiveTab = Color3.fromRGB(50, 25, 25)
+        },
+        ["Green"] = {
+            Main = Color3.fromRGB(20, 40, 20),
+            Primary = Color3.fromRGB(30, 80, 30),
+            Secondary = Color3.fromRGB(40, 120, 40),
+            ActiveTab = Color3.fromRGB(40, 120, 40),
+            InactiveTab = Color3.fromRGB(25, 50, 25)
+        },
+        ["Purple"] = {
+            Main = Color3.fromRGB(35, 20, 40),
+            Primary = Color3.fromRGB(70, 30, 80),
+            Secondary = Color3.fromRGB(100, 40, 120),
+            ActiveTab = Color3.fromRGB(100, 40, 120),
+            InactiveTab = Color3.fromRGB(50, 25, 60)
+        },
+        ["Pure Black"] = {
+            Main = Color3.fromRGB(15, 15, 15),
+            Primary = Color3.fromRGB(30, 30, 30),
+            Secondary = Color3.fromRGB(50, 50, 50),
+            ActiveTab = Color3.fromRGB(40, 40, 40),
+            InactiveTab = Color3.fromRGB(20, 20, 20)
+        }
+    }
+
+    local function ApplyTheme(theme)
+        ActiveTabColor = theme.ActiveTab
+        InactiveTabColor = theme.InactiveTab
+        MainFrame.BackgroundColor3 = theme.Main
+        Title.BackgroundColor3 = theme.InactiveTab
+        TabFrame.BackgroundColor3 = theme.InactiveTab
+        
+        -- Safe, lightweight recoloring (no heavy string parsing)
+        for _, child in ipairs(MainFrame:GetDescendants()) do
+            if child:IsA("Frame") or child:IsA("TextButton") then
+                if child.BackgroundColor3 == Color3.fromRGB(30, 30, 30) then
+                    child.BackgroundColor3 = theme.Main
+                elseif child.BackgroundColor3 == Color3.fromRGB(50, 50, 80) then
+                    child.BackgroundColor3 = theme.Primary
+                elseif child.BackgroundColor3 == Color3.fromRGB(70, 70, 100) then
+                    child.BackgroundColor3 = theme.Secondary
+                end
+            end
+        end
+        
+        if Page1.Visible then SwitchTab(Tab1, Page1, Page2, Page3)
+        elseif Page2.Visible then SwitchTab(Tab2, Page2, Page1, Page3)
+        else SwitchTab(Tab3, Page3, Page1, Page2) end
+    end
 
     local function MakeToggle(parent, y, text, default, callback)
         local frame = Instance.new("Frame")
@@ -315,98 +379,6 @@ if not UI_Worked then
         return y + 32
     end
 
-    -- 4. UI COLOR THEMES
-    local Themes = {
-        ["Default Blue"] = {
-            Main = Color3.fromRGB(30, 30, 30),
-            Primary = Color3.fromRGB(50, 50, 80),
-            Secondary = Color3.fromRGB(70, 70, 100),
-            ActiveTab = Color3.fromRGB(60, 60, 60),
-            InactiveTab = Color3.fromRGB(35, 35, 35)
-        },
-        ["Red"] = {
-            Main = Color3.fromRGB(40, 20, 20),
-            Primary = Color3.fromRGB(80, 30, 30),
-            Secondary = Color3.fromRGB(120, 40, 40),
-            ActiveTab = Color3.fromRGB(120, 40, 40),
-            InactiveTab = Color3.fromRGB(50, 25, 25)
-        },
-        ["Green"] = {
-            Main = Color3.fromRGB(20, 40, 20),
-            Primary = Color3.fromRGB(30, 80, 30),
-            Secondary = Color3.fromRGB(40, 120, 40),
-            ActiveTab = Color3.fromRGB(40, 120, 40),
-            InactiveTab = Color3.fromRGB(25, 50, 25)
-        },
-        ["Purple"] = {
-            Main = Color3.fromRGB(35, 20, 40),
-            Primary = Color3.fromRGB(70, 30, 80),
-            Secondary = Color3.fromRGB(100, 40, 120),
-            ActiveTab = Color3.fromRGB(100, 40, 120),
-            InactiveTab = Color3.fromRGB(50, 25, 60)
-        },
-        ["Pure Black"] = {
-            Main = Color3.fromRGB(15, 15, 15),
-            Primary = Color3.fromRGB(30, 30, 30),
-            Secondary = Color3.fromRGB(50, 50, 50),
-            ActiveTab = Color3.fromRGB(40, 40, 40),
-            InactiveTab = Color3.fromRGB(20, 20, 20)
-        }
-    }
-
-    local function ApplyTheme(theme)
-        ActiveTabColor = theme.ActiveTab
-        InactiveTabColor = theme.InactiveTab
-        
-        MainFrame.BackgroundColor3 = theme.Main
-        Title.BackgroundColor3 = Color3.fromRGB(
-            math.max(0, math.floor(theme.Main.R * 255) - 10),
-            math.max(0, math.floor(theme.Main.G * 255) - 10),
-            math.max(0, math.floor(theme.Main.B * 255) - 10)
-        )
-        TabFrame.BackgroundColor3 = theme.InactiveTab
-        
-        local function getStr(c3)
-            return math.floor(c3.R * 255) .. "," .. math.floor(c3.G * 255) .. "," .. math.floor(c3.B * 255)
-        end
-        
-        local function updateChild(inst)
-            if inst:IsA("Frame") or inst:IsA("TextButton") then
-                local s = getStr(inst.BackgroundColor3)
-                if s == "30,30,30" then
-                    inst.BackgroundColor3 = theme.Main
-                elseif s == "50,50,80" then
-                    inst.BackgroundColor3 = theme.Primary
-                elseif s == "70,70,100" then
-                    inst.BackgroundColor3 = theme.Secondary
-                elseif s == "40,40,60" then
-                    inst.BackgroundColor3 = Color3.fromRGB(
-                        math.floor(theme.Secondary.R * 255 * 0.6),
-                        math.floor(theme.Secondary.G * 255 * 0.6),
-                        math.floor(theme.Secondary.B * 255 * 0.6)
-                    )
-                elseif s == "60,60,90" then
-                    inst.BackgroundColor3 = Color3.fromRGB(
-                        math.floor(theme.Secondary.R * 255 * 0.8),
-                        math.floor(theme.Secondary.G * 255 * 0.8),
-                        math.floor(theme.Secondary.B * 255 * 0.8)
-                    )
-                elseif s == "60,60,60" or s == "35,35,35" then
-                    -- Handled by SwitchTab safely
-                end
-            end
-            for _, child in pairs(inst:GetChildren()) do
-                updateChild(child)
-            end
-        end
-        updateChild(MainFrame)
-        
-        -- Force update tabs
-        if Page1.Visible then SwitchTab(Tab1, Page1, Page2, Page3)
-        elseif Page2.Visible then SwitchTab(Tab2, Page2, Page1, Page3)
-        else SwitchTab(Tab3, Page3, Page1, Page2) end
-    end
-
     -- Build Aim Tab
     local y = 0
     y = MakeToggle(Page1, y, "Enabled", Aim_Enabled, function(v) Aim_Enabled = v end)
@@ -432,8 +404,9 @@ if not UI_Worked then
 
     -- Build Settings Tab
     y = 0
-    -- 3. REMOVED "FALLBACK MODE ACTIVE" TOGGLE
-    -- 4. ADDED UI THEME DROPDOWN
+    -- ADDED FALLBACK TOGGLE BACK
+    y = MakeToggle(Page3, y, "Fallback Mode Active", true, function() end)
+    -- SAFE UI THEME CHANGER
     y = MakeDropdown(Page3, y, "UI Theme", {"Default Blue", "Red", "Green", "Purple", "Pure Black"}, "Default Blue", function(v)
         if Themes[v] then
             ApplyTheme(Themes[v])
