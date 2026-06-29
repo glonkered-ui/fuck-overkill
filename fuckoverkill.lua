@@ -774,7 +774,7 @@ end)
 
 if UI_Loaded and UI_Library then
     Window = UI_Library:CreateWindow({
-        Title = "fuck overkill - made with ♥ by Glonk (tf3m on discord)",
+        Title = "Glonk's Enhancements - made with ♥ by Glonk (tf3m on discord)",
         Center = true,
         AutoShow = true,
     })
