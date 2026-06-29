@@ -1,40 +1,367 @@
--- ============ VARIABLES FIRST ============
-local ESP_Enabled = true
-local Box_Enabled = true
-local Name_Enabled = true
-local Health_Enabled = true
-local Distance_Enabled = true
-local Tracer_Enabled = true
-local Head_Dot_Enabled = true
-local Dead_Check_Enabled = true
+-- ============ VARIABLES (ALL OFF BY DEFAULT) ============
+local ESP_Enabled = false
+local Box_Enabled = false
+local Name_Enabled = false
+local Health_Enabled = false
+local Distance_Enabled = false
+local Tracer_Enabled = false
+local Head_Dot_Enabled = false
+local Dead_Check_Enabled = false
 local Box_Color = Color3.fromRGB(255, 255, 255)
 local Name_Color = Color3.fromRGB(255, 255, 255)
 local Tracer_Color = Color3.fromRGB(255, 255, 255)
 local Head_Dot_Color = Color3.fromRGB(255, 0, 0)
 local Tracer_Origin = "Bottom"
-local Aim_Enabled = true
+local ESP_Scale = 4
+
+local Aim_Enabled = false
 local Aim_FOV = 150
 local Aim_Smoothness = 0
 local Aim_Part = "Head"
 local Aim_Key_Name = "MB2"
 local Aim_Key = Enum.UserInputType.MouseButton2
-local Aim_Visible_Check = true
+local Aim_Visible_Check = false
 local Team_Check = false
-local FOV_Circle_Enabled = true
+local FOV_Circle_Enabled = false
 local FOV_Circle_Color = Color3.fromRGB(255, 255, 255)
+local Aim_Always_On = false
+local Max_Distance_Enabled = false
+local Max_Distance = 500
+
 local Player_Dead = {}
 local ESP_Pool = {}
 
 local function Set_Aim_Key(value)
     Aim_Key_Name = value
-    if value == "MB1" then
-        Aim_Key = Enum.UserInputType.MouseButton1
-    else
-        Aim_Key = Enum.UserInputType.MouseButton2
-    end
+    if value == "MB1" then Aim_Key = Enum.UserInputType.MouseButton1 else Aim_Key = Enum.UserInputType.MouseButton2 end
 end
 
 local function ClearTable(t)
+    for k in next, t do t[k] = nil end
+end
+
+-- ============ LINORIA UI ============
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/vlorik/Storage/main/Linoria"))()
+
+local Window = Library:CreateWindow({
+    Title = "Glonk's Enhancements",
+    Center = true,
+    AutoShow = true,
+    TabPadding = 8,
+    MenuFadeTime = 0.2
+})
+
+local Tabs = {
+    Aim = Window:AddTab("Aim"),
+    Rage = Window:AddTab("Rage"),
+    ESP = Window:AddTab("ESP"),
+    Settings = Window:AddTab("Settings")
+}
+
+-- ============ AIM TAB ============
+local AimGroup = Tabs.Aim:AddLeftGroupbox("Aimbot")
+
+AimGroup:AddToggle("Aim_Enabled", { Text = "Enabled", Default = false, Callback = function(v) Aim_Enabled = v end })
+AimGroup:AddDropdown("Aim_Key", { Values = {"MB1", "MB2"}, Default = 2, Multi = false, Text = "Aim Key", Callback = function(v) Set_Aim_Key(v) end })
+AimGroup:AddToggle("Aim_Always_On", { Text = "Always On", Default = false, Callback = function(v) Aim_Always_On = v end })
+
+AimGroup:AddSlider("Aim_FOV", { Text = "FOV", Default = 150, Min = 20, Max = 500, Rounding = 0, Callback = function(v) Aim_FOV = v end })
+AimGroup:AddSlider("Aim_Smoothness", { Text = "Smoothness", Default = 0, Min = 0, Max = 99, Rounding = 0, Callback = function(v) Aim_Smoothness = v end })
+AimGroup:AddDropdown("Aim_Part", { Values = {"Head", "HumanoidRootPart", "Torso", "Random"}, Default = 1, Multi = false, Text = "Aim Part", Callback = function(v) Aim_Part = v end })
+
+local AimChecks = Tabs.Aim:AddRightGroupbox("Checks & Limits")
+
+AimChecks:AddToggle("Aim_Visible_Check", { Text = "Visible Check", Default = false, Callback = function(v) Aim_Visible_Check = v end })
+AimChecks:AddToggle("Team_Check", { Text = "Team Check", Default = false, Callback = function(v) Team_Check = v end })
+AimChecks:AddToggle("Max_Distance_Enabled", { Text = "Max Distance", Default = false, Callback = function(v) Max_Distance_Enabled = v end })
+AimChecks:AddSlider("Max_Distance", { Text = "Max Studs", Default = 500, Min = 50, Max = 2000, Rounding = 0, Callback = function(v) Max_Distance = v end })
+
+local FOVGroup = Tabs.Aim:AddRightGroupbox("FOV Circle")
+
+FOVGroup:AddToggle("FOV_Circle_Enabled", { Text = "Draw FOV", Default = false, Callback = function(v) FOV_Circle_Enabled = v end })
+FOVGroup:AddColorpicker("FOV_Circle_Color", { Default = Color3.fromRGB(255, 255, 255), Title = "FOV Color", Callback = function(v) FOV_Circle_Color = v end })
+
+-- ============ RAGE TAB ============
+local RageGroup = Tabs.Rage:AddLeftGroupbox("Rage")
+RageGroup:AddLabel("Rage features coming soon...")
+
+-- ============ ESP TAB ============
+local ESPMainGroup = Tabs.ESP:AddLeftGroupbox("Main ESP")
+
+ESPMainGroup:AddToggle("ESP_Enabled", { Text = "Enabled", Default = false, Callback = function(v) ESP_Enabled = v end })
+ESPMainGroup:AddToggle("Dead_Check_Enabled", { Text = "Dead Check", Default = false, Callback = function(v) Dead_Check_Enabled = v; if not v then ClearTable(Player_Dead) end end })
+ESPMainGroup:AddToggle("Box_Enabled", { Text = "Box", Default = false, Callback = function(v) Box_Enabled = v end })
+ESPMainGroup:AddToggle("Name_Enabled", { Text = "Name", Default = false, Callback = function(v) Name_Enabled = v end })
+ESPMainGroup:AddToggle("Health_Enabled", { Text = "Health Bar", Default = false, Callback = function(v) Health_Enabled = v end })
+ESPMainGroup:AddToggle("Distance_Enabled", { Text = "Distance", Default = false, Callback = function(v) Distance_Enabled = v end })
+
+local ESPColorsGroup = Tabs.ESP:AddRightGroupbox("ESP Colors")
+ESPColorsGroup:AddColorpicker("Box_Color", { Default = Color3.fromRGB(255, 255, 255), Title = "Box Color", Callback = function(v) Box_Color = v end })
+ESPColorsGroup:AddColorpicker("Name_Color", { Default = Color3.fromRGB(255, 255, 255), Title = "Name Color", Callback = function(v) Name_Color = v end })
+
+local ESPOtherGroup = Tabs.ESP:AddRightGroupbox("Extra ESP")
+
+ESPOtherGroup:AddToggle("Tracer_Enabled", { Text = "Tracers", Default = false, Callback = function(v) Tracer_Enabled = v end })
+ESPOtherGroup:AddColorpicker("Tracer_Color", { Default = Color3.fromRGB(255, 255, 255), Title = "Tracer Color", Callback = function(v) Tracer_Color = v end })
+ESPOtherGroup:AddDropdown("Tracer_Origin", { Values = {"Bottom", "Middle", "Top"}, Default = 1, Multi = false, Text = "Tracer Origin", Callback = function(v) Tracer_Origin = v end })
+
+ESPOtherGroup:AddToggle("Head_Dot_Enabled", { Text = "Head Dot", Default = false, Callback = function(v) Head_Dot_Enabled = v end })
+ESPOtherGroup:AddColorpicker("Head_Dot_Color", { Default = Color3.fromRGB(255, 0, 0), Title = "Dot Color", Callback = function(v) Head_Dot_Color = v end })
+
+ESPOtherGroup:AddSlider("ESP_Scale", { Text = "Box Size Scale", Default = 4, Min = 1, Max = 15, Rounding = 1, Callback = function(v) ESP_Scale = v end })
+
+-- ============ SETTINGS TAB ============
+local SettingsGroup = Tabs.Settings:AddLeftGroupbox("Menu Settings")
+SettingsGroup:AddLabel("UI: Linoria Library")
+SettingsGroup:AddToggle("Watermark", { Text = "Show Watermark", Default = false, Callback = function(v) Library:SetWatermarkVisibility(v) end })
+
+-- ============ GAME LOGIC ============
+pcall(function()
+    local replicated_first = game:GetService("ReplicatedFirst")
+    local peuron = require(replicated_first:WaitForChild("neuron"))
+    task.spawn(function()
+        while task.wait() do
+            pcall(function()
+                for _, v in game.Players:GetPlayers() do
+                    if not v.Character then v.Character = peuron:get_character(v) end
+                end
+            end)
+        end
+    end)
+end)
+
+-- ============ CORE FUNCTIONS ============
+local Services = {
+    Players = game:GetService("Players"),
+    Run_Service = game:GetService("RunService"),
+    User_Input = game:GetService("UserInputService"),
+    Workspace = game:GetService("Workspace")
+}
+local Local_Player = Services.Players.LocalPlayer
+local Camera = Services.Workspace.CurrentCamera
+local v2_new, v3_new = Vector2.new, Vector3.new
+local math_floor, math_clamp = math.floor, math.clamp
+local table_insert = table.insert
+
+local function World_To_Screen(pos)
+    local p, o = Camera:WorldToViewportPoint(pos)
+    return v2_new(p.X, p.Y), o, p.Z
+end
+
+local function Get_Nearest_Part(player, part_name)
+    local char = player.Character
+    if not char then return nil end
+    if part_name == "Random" then
+        local parts = {}
+        for _, v in ipairs(char:GetChildren()) do if v:IsA("BasePart") then table_insert(parts, v) end end
+        if #parts > 0 then return parts[math.random(1, #parts)] else return char:FindFirstChild("HumanoidRootPart") end
+    end
+    if part_name == "Torso" then return char:FindFirstChild("Torso") or char:FindFirstChild("UpperTorso") end
+    if part_name == "HumanoidRootPart" then return char:FindFirstChild("HumanoidRootPart") end
+    return char:FindFirstChild(part_name)
+end
+
+local function Get_Distance_From_Local(player)
+    local c, lc = player.Character, Local_Player.Character
+    if not c or not lc then return 0 end
+    local r, lr = c:FindFirstChild("HumanoidRootPart"), lc:FindFirstChild("HumanoidRootPart")
+    if r and lr then return (r.Position - lr.Position).Magnitude end
+    return 0
+end
+
+local function Find_Custom_Health(player)
+    local h, mh = nil, nil
+    for _, root in ipairs({player, player.Character}) do
+        if root then
+            for _, inst in ipairs(root:GetDescendants()) do
+                local n = inst.Name:lower()
+                local v = (inst:IsA("NumberValue") or inst:IsA("IntValue")) and inst.Value or (inst:IsA("StringValue") and tonumber(inst.Value))
+                if v then
+                    if n:match("health") or n == "hp" then h = h or v
+                    elseif n:match("max") and (n:match("health") or n:match("hp")) then mh = mh or v end
+                end
+            end
+            h = h or tonumber(root:GetAttribute("Health") or root:GetAttribute("HP"))
+            mh = mh or tonumber(root:GetAttribute("MaxHealth") or root:GetAttribute("MaxHP"))
+        end
+    end
+    return h, mh
+end
+
+local function Get_Health(player)
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum and hum.MaxHealth and hum.MaxHealth > 0 then return hum.Health / hum.MaxHealth end
+    end
+    local h, mh = Find_Custom_Health(player)
+    if h == nil then return 0 end
+    if mh and mh > 0 then return math_clamp(h / mh, 0, 1) end
+    return h > 0 and 1 or 0
+end
+
+local function Is_Player_Dead(player)
+    local char = player.Character
+    if not char then return true end
+    local h, _ = Find_Custom_Health(player)
+    if h ~= nil then return h <= 0 end
+    local hum = char:FindFirstChildOfClass("Humanoid")
+    if hum then
+        if hum:GetState() == Enum.HumanoidStateType.Dead then return true end
+        if hum.MaxHealth and hum.MaxHealth > 0 then return hum.Health <= 0 end
+    end
+    return false
+end
+
+local function Is_Same_Team(player)
+    if not Team_Check then return false end
+    if Local_Player.Team == nil then return false end
+    return player.Team == Local_Player.Team
+end
+
+-- ============ DRAWINGS ============
+local FOV_Drawing = Drawing.new("Circle")
+FOV_Drawing.Filled = false
+FOV_Drawing.Thickness = 1.5
+FOV_Drawing.NumSides = 100
+FOV_Drawing.Transparency = 0.7
+FOV_Drawing.ZIndex = 2
+FOV_Drawing.Visible = false
+
+local function Create_ESP_Drawings(player)
+    local d = {}
+    d.Box_Outline = Drawing.new("Square"); d.Box_Outline.Thickness = 1.5; d.Box_Outline.ZIndex = 3; d.Box_Outline.Visible = false
+    d.Box_Fill = Drawing.new("Square"); d.Box_Fill.Filled = true; d.Box_Fill.Color = Color3.new(0,0,0); d.Box_Fill.Transparency = 0.7; d.Box_Fill.ZIndex = 2; d.Box_Fill.Visible = false
+    d.Health_Bar_BG = Drawing.new("Line"); d.Health_Bar_BG.Color = Color3.fromRGB(40,40,40); d.Health_Bar_BG.Thickness = 2; d.Health_Bar_BG.ZIndex = 3; d.Health_Bar_BG.Visible = false
+    d.Health_Bar = Drawing.new("Line"); d.Health_Bar.Thickness = 2; d.Health_Bar.ZIndex = 4; d.Health_Bar.Visible = false
+    d.Name_Text = Drawing.new("Text"); d.Name_Text.Size = 13; d.Name_Text.Center = true; d.Name_Text.Outline = true; d.Name_Text.Font = Drawing.Fonts.Plex; d.Name_Text.ZIndex = 3; d.Name_Text.Visible = false
+    d.Distance_Text = Drawing.new("Text"); d.Distance_Text.Color = Color3.fromRGB(200,200,200); d.Distance_Text.Size = 12; d.Distance_Text.Center = true; d.Distance_Text.Outline = true; d.Distance_Text.Font = Drawing.Fonts.Plex; d.Distance_Text.ZIndex = 3; d.Distance_Text.Visible = false
+    d.Tracer_Line = Drawing.new("Line"); d.Tracer_Line.Thickness = 1; d.Tracer_Line.Transparency = 0.5; d.Tracer_Line.ZIndex = 1; d.Tracer_Line.Visible = false
+    d.Head_Dot = Drawing.new("Circle"); d.Head_Dot.Filled = true; d.Head_Dot.Radius = 4; d.Head_Dot.NumSides = 20; d.Head_Dot.ZIndex = 4; d.Head_Dot.Visible = false
+    ESP_Pool[player] = d
+    return d
+end
+
+-- ============ AIMBOT LOGIC (PC ONLY) ============
+local function Get_Closest_Target()
+    local closest, dist = nil, Aim_FOV
+    local center = v2_new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    for _, p in ipairs(Services.Players:GetPlayers()) do
+        if p ~= Local_Player and not Is_Same_Team(p) and not (Dead_Check_Enabled and Is_Player_Dead(p)) then
+            local part = Get_Nearest_Part(p, Aim_Part)
+            if part then
+                local skip_target = false
+                if Max_Distance_Enabled and Get_Distance_From_Local(p) > Max_Distance then skip_target = true end
+                if not skip_target then
+                    local sp, vis = World_To_Screen(part.Position)
+                    if vis then
+                        local d = (sp - center).Magnitude
+                        if d < dist then dist, closest = d, p end
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
+
+local function Aim_At_Target(player)
+    local part = Get_Nearest_Part(player, Aim_Part)
+    if not part then return end
+    local sp, vis = World_To_Screen(part.Position)
+    if not vis then return end
+    local center = v2_new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    local delta = sp - center
+    local s = math_clamp(1 - (math_clamp(Aim_Smoothness, 0, 99) / 100), 0.01, 1)
+    mousemoverel(delta.X * s, delta.Y * s)
+end
+
+-- ============ ESP LOGIC ============
+local function Update_ESP()
+    local ss = Camera.ViewportSize
+    for _, player in ipairs(Services.Players:GetPlayers()) do
+        if player ~= Local_Player then
+            local drawings = ESP_Pool[player]
+            local skip = Is_Same_Team(player) or (Dead_Check_Enabled and Is_Player_Dead(player))
+            local char, hrp, head = nil, nil, nil
+            if not skip then
+                char = player.Character
+                if char then hrp = char:FindFirstChild("HumanoidRootPart"); head = char:FindFirstChild("Head") end
+                if not hrp or not head then skip = true end
+            end
+            
+            if not skip then
+                if not drawings then drawings = Create_ESP_Drawings(player) end
+                
+                local rp = World_To_Screen(hrp.Position)
+                local hp = World_To_Screen(head.Position + v3_new(0, 0.3, 0))
+                local distance = Get_Distance_From_Local(player)
+                
+                local height = (1000 / math.clamp(distance, 1, 1000)) * ESP_Scale
+                local width = height * 0.55
+                
+                local cx = (rp.X + hp.X) / 2
+                local cy = (rp.Y + hp.Y) / 2
+                local bx, by = cx - width / 2, cy - height / 2
+
+                drawings.Box_Outline.Position = v2_new(bx, by); drawings.Box_Outline.Size = v2_new(width, height)
+                drawings.Box_Outline.Color = Box_Color; drawings.Box_Outline.Visible = Box_Enabled and ESP_Enabled
+                drawings.Box_Fill.Position = v2_new(bx, by); drawings.Box_Fill.Size = v2_new(width, height)
+                drawings.Box_Fill.Visible = Box_Enabled and ESP_Enabled
+                
+                local barx = bx - 6
+                local health = Get_Health(player)
+                drawings.Health_Bar_BG.From = v2_new(barx, by); drawings.Health_Bar_BG.To = v2_new(barx, by + height)
+                drawings.Health_Bar_BG.Visible = Health_Enabled and ESP_Enabled
+                drawings.Health_Bar.From = v2_new(barx, by + height - (height * health)); drawings.Health_Bar.To = v2_new(barx, by + height)
+                drawings.Health_Bar.Color = Color3.fromRGB((1 - health) * 255, health * 255, 40)
+                drawings.Health_Bar.Visible = Health_Enabled and ESP_Enabled
+                
+                drawings.Name_Text.Text = player.Name; drawings.Name_Text.Position = v2_new(cx, by - 14)
+                drawings.Name_Text.Color = Name_Color; drawings.Name_Text.Visible = Name_Enabled and ESP_Enabled
+                
+                drawings.Distance_Text.Text = math_floor(distance) .. "m"; drawings.Distance_Text.Position = v2_new(cx, by + height + 4)
+                drawings.Distance_Text.Visible = Distance_Enabled and ESP_Enabled
+                
+                local oy = ss.Y
+                if Tracer_Origin == "Top" then oy = 0 elseif Tracer_Origin == "Middle" then oy = ss.Y / 2 end
+                drawings.Tracer_Line.From = v2_new(ss.X / 2, oy); drawings.Tracer_Line.To = v2_new(cx, rp.Y + height/2)
+                drawings.Tracer_Line.Color = Tracer_Color; drawings.Tracer_Line.Visible = Tracer_Enabled and ESP_Enabled
+                
+                drawings.Head_Dot.Position = hp; drawings.Head_Dot.Color = Head_Dot_Color
+                drawings.Head_Dot.Visible = Head_Dot_Enabled and ESP_Enabled
+            end
+            if skip and drawings then
+                for _, d in pairs(drawings) do d.Visible = false end
+            end
+        end
+    end
+end
+
+-- ============ MAIN LOOP ============
+Services.Run_Service.RenderStepped:Connect(function()
+    pcall(function()
+        Update_ESP()
+        if Aim_Enabled then
+            if Aim_Always_On or Services.User_Input:IsMouseButtonPressed(Aim_Key) then
+                local t = Get_Closest_Target()
+                if t then Aim_At_Target(t) end
+            end
+        end
+        FOV_Drawing.Position = v2_new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+        FOV_Drawing.Radius = Aim_FOV
+        FOV_Drawing.Color = FOV_Circle_Color
+        FOV_Drawing.Visible = FOV_Circle_Enabled
+    end)
+end)
+
+Services.Players.PlayerRemoving:Connect(function(player)
+    if ESP_Pool[player] then
+        for _, d in pairs(ESP_Pool[player]) do pcall(d.Remove, d) end
+        ESP_Pool[player] = nil
+    end
+    Player_Dead[player] = nil
+end)local function ClearTable(t)
     for k in next, t do t[k] = nil end
 end
 
